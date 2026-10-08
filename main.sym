@@ -1,2 +1,3 @@
-.label clean_screen_last_chars=$c01a
-.label clean_screen=$c00e
+.label clean_text_screen=$c00e
+.label clear_bitmap=$c030
+.label clean_text_screen_last_chars=$c01a

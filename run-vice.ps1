@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-$vicePath = 'D:\Juegos\Emulators\WinVICE-3.1-x64\x64sc.exe'
+$vicePath = 'D:\Juegos\Emulators\GTK3VICE-3.10-win64\bin\x64sc.exe'
 $programPath = Join-Path $PSScriptRoot 'main.prg'
 $monitorPort = 6510
 $client = $null
@@ -53,7 +53,8 @@ try {
         if ($running.Count -gt 0) {
             throw 'Hay un VICE abierto sin monitor accesible. Cerralo una vez y ejecuta compile.bat de nuevo; las siguientes compilaciones reutilizaran esa ventana.'
         }
-        $arguments = '-remotemonitor -remotemonitoraddress ip4://127.0.0.1:6510 -autostartprgmode 1 -autoload "' + $programPath + '"'
+        # GTK3VICE no debe reconectar sus entradas/salidas a la consola del BAT.
+        $arguments = '-no-redirect-streams -remotemonitor -remotemonitoraddress ip4://127.0.0.1:6510 -autostartprgmode 1 -autoload "' + $programPath + '"'
         Start-Process -FilePath $vicePath -ArgumentList $arguments -WorkingDirectory $PSScriptRoot
         Write-Host 'VICE iniciado. Cuando aparezca READY, ejecuta SYS 49152.'
         exit 0

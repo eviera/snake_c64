@@ -12,13 +12,12 @@ HERRAMIENTAS Y DESCARGAS
   Elegir Download Kick Assembler y extraer el ZIP.
   Nuestro compile.bat espera KickAss.jar en la carpeta del proyecto.
 
-- Emulador: VICE (usamos WinVICE 3.1 x64, emulador x64sc.exe).
+- Emulador: VICE (usamos GTK3VICE 3.10 x64, emulador bin\x64sc.exe).
   Descargas oficiales para Windows:
   https://vice-emu.sourceforge.io/#download
   Para una instalacion nueva, elegir la version Windows 64bit GTK3.
-  La pagina tambien enlaza las versiones antiguas para Windows.
   Nuestro run-vice.ps1 tiene configurada esta ruta:
-  D:\Juegos\Emulators\WinVICE-3.1-x64\x64sc.exe
+  D:\Juegos\Emulators\GTK3VICE-3.10-win64\bin\x64sc.exe
   Si se instala en otra carpeta, ajustar $vicePath en run-vice.ps1.
 
 - Editor: Visual Studio Code.
