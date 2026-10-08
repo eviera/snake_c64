@@ -69,6 +69,86 @@ clear_last_64_bytes_bitmap:
     cpy     #64
     bne     clear_last_64_bytes_bitmap
 
+/* 
+    Colores, para bailar este twist
+
+    Parte del byte	Función
+    Bits 7–4, nibble alto	Color de los píxeles cuyo bit es 1
+    Bits 3–0, nibble bajo	Color de los píxeles cuyo bit es 0
+
+    Un nibble es medio byte: 4 bits. Puede representar valores de 0 a 15, justo los 16 colores de la C64.
+    Por ejemplo, $25 selecciona rojo (2) para los bits 1 y verde (5) para los bits 0. En este modo, esos colores los determina cada celda; $D021 no decide el fondo del bitmap.    
+    
+                    $25 es en binario 0010 0101
+                    Nibble Alto     Nibble Bajo
+                    0010            0101
+                    Dec 2 - Rojo    Dec 5 - Verde
+
+                    Color	    Dec	Hex	Nibble
+                    Negro	    0	$00	0000
+                    Blanco	    1	$01	0001
+                    Rojo	    2	$02	0010
+                    Cian	    3	$03	0011
+                    Violeta	    4	$04	0100
+                    Verde	    5	$05	0101
+                    Azul	    6	$06	0110
+                    Amarillo    7	$07	0111
+                    Naranja	    8	$08	1000
+                    Marrón	    9	$09	1001
+                    Rojo claro	10	$0A	1010
+                    Gris oscuro	11	$0B	1011
+                    Gris medio	12	$0C	1100
+                    Verde claro	13	$0D	1101
+                    Azul claro	14	$0E	1110
+                    Gris claro	15	$0F	1111
+                
+
+    -----------------------------------------------------------------------------------------------------------------------------------------
+    RESUMEN
+    -------
+    $2000 x 8000 bytes, pixeles
+    $0400 x 1000 bytes, colores de bloques de 8x8 (2 colores por bloque, uno para los pixles 0, y otro para los pixeles 1)
+    -----------------------------------------------------------------------------------------------------------------------------------------
+
+    En bitmap hires, la imagen tiene 320 × 200 píxeles y se construye combinando dos zonas de memoria: los dibujos de los píxeles y sus colores.
+    Las direcciones que elegimos son configurables; para nuestro proyecto vamos a usar estas:
+    Zona	            Direcciones	        Tamaño	        Contenido
+    Bitmap (pixeles)    $2000–$3F3F	        8000 bytes	    Un bit por píxel
+    Colores del bitmap	$0400–$07E7	        1000 bytes	    Dos colores por bloque de 8 × 8 píxeles (con colores para el 0 y para el 1 en los nibbles del byte)
+
+    La pantalla se divide en 40 × 25 bloques de 8 × 8 píxeles. Cada bloque ocupa ocho bytes, uno por fila:
+    Dirección	Qué representa
+    $2000	Primera fila del primer bloque
+    $2001	Segunda fila del primer bloque
+    …	…
+    $2007	Última fila del primer bloque
+    $2008	Primera fila del segundo bloque, a la derecha
+    $200F	Última fila del segundo bloque
+
+    Dentro de cada byte, el bit 7 corresponde al píxel izquierdo y el bit 0 al derecho.
+    Un byte $80, es decir 10000000, selecciona el color 1 para el primer píxel y el color 0 para los otros siete. Esos nombres indican las dos opciones del bloque; no significan necesariamente blanco y negro.
+
+    La memoria en $0400: cuáles son esos colores
+    Cada bloque tiene un byte que define sus dos colores:
+    Dirección	Bloque que colorea
+    $0400	    Primer bloque: bitmap $2000–$2007
+    $0401	    Segundo bloque: bitmap $2008–$200F
+    $0402	    Tercer bloque: bitmap $2010–$2017
+    
+
+    Así, con $80 en $2000 y $16 en $0400, la primera fila del primer bloque muestra un píxel blanco seguido de siete azules. Los ocho bytes de ese bloque comparten esos mismos dos colores.
+
+    Los registros que seleccionan esa distribución
+    Registro	    Función
+    $DD00	        Selecciona el banco de 16 KiB que ve el VIC-II; usaremos el inicial, $0000–$3FFF.
+    $D018	        Dentro de ese banco, selecciona dónde están el bitmap y la memoria de pantalla usada para sus colores.
+    $D011, bit 5	Activa el modo bitmap. Su bit 6 debe estar en cero para bitmap estándar.
+    $D016, bit 4	Debe estar en cero para hires; en uno selecciona multicolor.
+    $D020	        Sigue controlando el color del borde.
+
+    
+*/
+
 
 
 
