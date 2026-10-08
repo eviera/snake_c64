@@ -57,12 +57,18 @@ clean_text_screen_last_chars:
     ldy     #0              // inicio bucle
 
 clear_bitmap:
-    sta     ($FB),y         // guarda el valor de A ($0 en este caso), en donde direccione el puntero de 16 bits $FBFC (0020, que se lee como $2000) sumado el valor de y, entonces hace $2000+1, $2000+2, etc, hasta $2000+255
+    sta     ($FB),y         // guarda el valor de A ($0 en este caso), en donde direccione el puntero de 16 bits apuntado por las direcciones de $00FB y $00FC (00 y 20, que se lee como $2000) sumado el valor de y, entonces hace $2000+0, $2000+1, etc, hasta $2000+255
     iny                     // incrementa y
     bne     clear_bitmap    // salta a clear_bitmap si y != 0
     inc     $FC             // incrementa $FC para apuntar al proximo bloque de 256 bytes, arrancando en $2100
     dex                     // decrementa el contador de los 31 bloques
     bne     clear_bitmap    // repito hasta que x llegue a 0
+clear_last_64_bytes_bitmap:
+    sta     ($FB),y
+    iny
+    cpy     #64
+    bne     clear_last_64_bytes_bitmap
+
 
 
 
