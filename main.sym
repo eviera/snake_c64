@@ -1,4 +1,6 @@
-.label clean_text_screen=$c00e
+.label set_bitmap_colors_last_bytes=$c01a
+.label loop_linea=$c045
+.label set_bitmap_colors=$c00e
 .label clear_bitmap=$c030
-.label clean_text_screen_last_chars=$c01a
+.label loop_infinito=$c05d
 .label clear_last_64_bytes_bitmap=$c03a

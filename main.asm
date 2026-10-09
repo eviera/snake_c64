@@ -26,6 +26,7 @@ clean_start:
 
 */
 
+/*
 // borrado de toda la pantalla de texto. Son 1000 chars (40x25). 
     lda     #$20            // cargo espacio (screen code 32, hexa $20)
     ldx     #0              // inicio el indice del bucle
@@ -43,7 +44,28 @@ clean_text_screen_last_chars:
     inx
     cpx     #232
     bne     clean_text_screen_last_chars
-    
+*/   
+
+
+// hago algo parecido a borrar la pantalla de texto, pero esta vez asignando los colores que quiero para el modo bitmap
+    lda     #$10            // cargo el hexa $10 que corresponde al binario 0001 0000. El nibble alto indica el color para el pixel 1 (blanco en este caso 0001), y el nibble bajo el color para el pixel 0 (negro 0000)
+    ldx     #0              // inicio el indice del bucle
+
+// seteo primeros 256+256+256 = 768
+set_bitmap_colors:
+    sta     $0400,x        // inicializo en la posicion 0 de pantalla
+    sta     $0500,x        // inicializo en la pos 256
+    sta     $0600,x        // inicializo en la 512
+    inx
+    bne     set_bitmap_colors   // aca salta cuando x que es de 8 bits da la vuelta completa y pasa de 255 a 0. Esto hace saltar el registro Z que queda en 1, y bne sale del bucle
+// ahora seteo las 1000-768 = 232 posiciones restantes
+set_bitmap_colors_last_bytes:
+    sta     $0700,x       // x tiene que estar en 0
+    inx
+    cpx     #232
+    bne     set_bitmap_colors_last_bytes
+
+
 
 // borrado de toda la pantalla bitmap. Son 8000 bytes. Vamos a rellenar con 0s (de $2000 a $3F3F)
 // primero seteo en la pagina cero (zero page, primera pagina y es especial) el valor $2000 que es donde quiero que apunte la primer direccion
@@ -146,10 +168,39 @@ clear_last_64_bytes_bitmap:
     $D016, bit 4	Debe estar en cero para hires; en uno selecciona multicolor.
     $D020	        Sigue controlando el color del borde.
 
-    
+
 */
 
+// prueba de dibujar una linea vertical en el primer bloque
+    lda     #$80            // $80 es 1000 0000, asi que queda una linea a la izquierda
+                            /*   
+                            10000000
+                            10000000
+                            10000000
+                            10000000
+                            10000000
+                            10000000
+                            10000000
+                            10000000
+                            */
+    ldx     #0              // inicio el indice del bucle
+loop_linea:
+    sta     $2000,x
+    inx
+    cpx     #8
+    bne     loop_linea
 
 
+// Vamos a seleccionar $2000 como ubicación del bitmap, poniendo el bit 3 de $D018 en 1. La máscara es 00001000, o $08
+    lda     $D018           // Primero leo el contenido de $D018 en el registro A
+    ora     #%00001000      // Oreo el bit 3 para prenderlo ($08)
+    sta     $D018           // Guardo el valor oreado en $D018
+// Ahora a setear el modo bitmap hires poniendo el 1 el bit 5 de $D011
+    lda     $D011           // Primero leo el contenido de $D011 en el registro A
+    ora     #%00100000      // Oreo el bit 5 para prenderlo 
+    sta     $D011           // Guardo el valor oreado en $D011
 
-    rts                     // return from subrutine, vuelve a BASIC
+
+    // rts                     // return from subrutine, vuelve a BASIC
+loop_infinito:
+    jmp     loop_infinito
