@@ -48,7 +48,7 @@ clean_text_screen_last_chars:
 
 
 // hago algo parecido a borrar la pantalla de texto, pero esta vez asignando los colores que quiero para el modo bitmap
-    lda     #$10            // cargo el hexa $10 que corresponde al binario 0001 0000. El nibble alto indica el color para el pixel 1 (blanco en este caso 0001), y el nibble bajo el color para el pixel 0 (negro 0000)
+    lda     #$50            // cargo el hexa $50 que corresponde al binario 0101 0000. El nibble alto indica el color para el pixel 1 (verde en este caso 0101), y el nibble bajo el color para el pixel 0 (negro 0000)
     ldx     #0              // inicio el indice del bucle
 
 // seteo primeros 256+256+256 = 768
@@ -171,25 +171,17 @@ clear_last_64_bytes_bitmap:
 
 */
 
+/*
 // prueba de dibujar una linea vertical en el primer bloque
     lda     #$80            // $80 es 1000 0000, asi que queda una linea a la izquierda
-                            /*   
-                            10000000
-                            10000000
-                            10000000
-                            10000000
-                            10000000
-                            10000000
-                            10000000
-                            10000000
-                            */
     ldx     #0              // inicio el indice del bucle
 loop_linea:
     sta     $2000,x
     inx
     cpx     #8
     bne     loop_linea
-
+*/
+    
 
 // Vamos a seleccionar $2000 como ubicación del bitmap, poniendo el bit 3 de $D018 en 1. La máscara es 00001000, o $08
     lda     $D018           // Primero leo el contenido de $D018 en el registro A
@@ -201,6 +193,57 @@ loop_linea:
     sta     $D011           // Guardo el valor oreado en $D011
 
 
+// prueba de dibujar un cuadrado solido, teniendo su direccion apuntada por $00FB $00FC
+    lda     #$F8    
+    sta     $FB             // en $00FB va el byte bajo 
+    lda     #$21            // en $00FC va el byte alto 
+    sta     $FC
+
+    lda     #$FF            // $FF es 1111 1111, asi que queda una todo solido
+    jsr     fn_dibujar_bloque
+
+
+// quiero sumar $21F8 + $08 para mover el cuadrado uno a la derecha, usando acarreo (por ahora solo cambiamos el puntero, no el dibujo)
+// | Operación             | Resultado guardado | Acarreo   |
+// | Bajo: `$F8 + $08 + 0` | `$00`              | 1         |   
+// | Alto: `$21 + $00 + 1` | `$22`              | 0         |
+    clc                     // limpio acarreo
+    lda     $FB             // cargo el byte bajo que ya tenia en $00FB
+    adc     #$08            // le sumo 8 (lo deja dentro de A, y ademas prende el acarreo porque se paso)
+    sta     $FB             // guardo el resultado de la suma en $00FB, el byte bajo
+    lda     $FC             // cargo el byte alto que ya tenia en $00FC
+    adc     #$00            // sumo cero, mas el carry, lo que lo va a llevar a $22
+    sta     $FC             // guardo el resultado en el byte alto
+
+    lda     #$FF            // $FF es 1111 1111, asi que queda una todo solido
+    jsr     fn_dibujar_bloque
+
+
+
+
+
+
     // rts                     // return from subrutine, vuelve a BASIC
 loop_infinito:
     jmp     loop_infinito
+
+
+
+
+
+/*
+    subrutina de dibujo un cuadrado solido, teniendo su direccion apuntada por $00FB $00FC
+    parametros:
+       A           representa una linea en el bloque ($00 nada, $FF toda llena)
+       $00FB       tiene cargado el byte bajo a dibujar de las direcciones de la pantalla bitmap (8000 bytes totales desde $2000)
+       $00FC       tiene cargado el byte alto
+        
+*/
+fn_dibujar_bloque:
+    ldy     #0              // inicio el indice del bucle
+loop_linea2:
+    sta     ($FB),y         // este modo de direccionamiento solo funciona con y
+    iny
+    cpy     #8
+    bne     loop_linea2
+    rts                     // return

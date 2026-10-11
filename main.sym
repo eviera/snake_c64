@@ -1,6 +1,7 @@
 .label set_bitmap_colors_last_bytes=$c01a
-.label loop_linea=$c045
 .label set_bitmap_colors=$c00e
+.label fn_dibujar_bloque=$c073
 .label clear_bitmap=$c030
-.label loop_infinito=$c05d
+.label loop_infinito=$c070
+.label loop_linea2=$c075
 .label clear_last_64_bytes_bitmap=$c03a
