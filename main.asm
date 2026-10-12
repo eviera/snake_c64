@@ -203,6 +203,22 @@ loop_linea:
     jsr     fn_dibujar_bloque
 
 
+
+
+
+
+
+    lda     #4
+    sta     pasos           // abajo esta declarada la variable pasos
+
+loop_bloques_prueba:
+
+    jsr     fn_loop_espera
+
+    lda     #$00            // borro el bloque
+    jsr     fn_dibujar_bloque
+
+
 // quiero sumar $21F8 + $08 para mover el cuadrado uno a la derecha, usando acarreo (por ahora solo cambiamos el puntero, no el dibujo)
 // | Operación             | Resultado guardado | Acarreo   |
 // | Bajo: `$F8 + $08 + 0` | `$00`              | 1         |   
@@ -218,9 +234,8 @@ loop_linea:
     lda     #$FF            // $FF es 1111 1111, asi que queda una todo solido
     jsr     fn_dibujar_bloque
 
-
-
-
+    dec     pasos
+    bne     loop_bloques_prueba
 
 
     // rts                     // return from subrutine, vuelve a BASIC
@@ -241,9 +256,28 @@ loop_infinito:
 */
 fn_dibujar_bloque:
     ldy     #0              // inicio el indice del bucle
-loop_linea2:
+loop_linea:
     sta     ($FB),y         // este modo de direccionamiento solo funciona con y
     iny
     cpy     #8
-    bne     loop_linea2
+    bne     loop_linea
     rts                     // return
+
+
+/* 
+    subrutina de espera de 255x255 loops
+*/
+fn_loop_espera:
+    ldx     #255
+loop_x:
+    ldy     #255
+loop_y:
+    dey
+    bne     loop_y
+    dex
+    bne     loop_x
+    rts
+
+
+pasos:      .byte   0
+
