@@ -194,9 +194,10 @@ loop_linea:
 
 
 // prueba de dibujar un cuadrado solido, teniendo su direccion apuntada por $00FB $00FC
-    lda     #$F8    
+// lo seteo en el primer lugar $2000 (fila 0, columna 0)
+    lda     #$00    
     sta     $FB             // en $00FB va el byte bajo 
-    lda     #$21            // en $00FC va el byte alto 
+    lda     #$20            // en $00FC va el byte alto 
     sta     $FC
 
     lda     #$FF            // $FF es 1111 1111, asi que queda una todo solido
@@ -205,24 +206,120 @@ loop_linea:
 
 
 
-
-
-
-    lda     #4
+// inicializaciond de variables
+    lda     #0
+    sta     fila
+    sta     columna
+    lda     #100
     sta     pasos           // abajo esta declarada la variable pasos
 
 loop_bloques_prueba:
 
-    jsr     fn_loop_espera
+// espero por la tecla
+    jsr     fn_getkey       
+    
+// analizo la tecla presionada
+/*
+    Q $51
+    A $41
+    O $4F
+    P $50
+*/    
+    lda     tecla
+    cmp     #$51         // Q
+    beq     key_up
+    cmp     #$41         // A
+    beq     key_down
+    cmp     #$4F         // O
+    beq     key_left
+    cmp     #$50         // P
+    beq     key_right
+    
+key_up:
+    // chequeo que no se quiera mover arriba de al fila 0
+    lda     fila
+    cmp     #0
+    beq     loop_bloques_prueba
+    dec     fila
 
-    lda     #$00            // borro el bloque
+    // borro el bloque original antes de moverme
+    lda     #$00            
     jsr     fn_dibujar_bloque
 
+    // le resto 320 bytes (40x8 una fila)
+    sec                     
+    lda     $FB             
+    sbc     #$40            
+    sta     $FB             
+    lda     $FC             
+    sbc     #$01            
+    sta     $FC             
+    jmp     dibujar_bloque_solido
 
-// quiero sumar $21F8 + $08 para mover el cuadrado uno a la derecha, usando acarreo (por ahora solo cambiamos el puntero, no el dibujo)
-// | Operación             | Resultado guardado | Acarreo   |
-// | Bajo: `$F8 + $08 + 0` | `$00`              | 1         |   
-// | Alto: `$21 + $00 + 1` | `$22`              | 0         |
+key_down:
+    // chequeo que no se quiera mover abajo de la fila 24
+    lda     fila
+    cmp     #24
+    beq     loop_bloques_prueba
+    inc     fila
+
+    // borro el bloque original antes de moverme
+    lda     #$00            
+    jsr     fn_dibujar_bloque
+
+    // sumo resto 320 bytes (40x8 una fila)
+    clc                     
+    lda     $FB             
+    adc     #$40           
+    sta     $FB             
+    lda     $FC             
+    adc     #$01            
+    sta     $FC             
+    jmp     dibujar_bloque_solido
+
+key_left:
+    // chequeo que no se quiera mover antes de la columna  0
+    lda     columna
+    cmp     #0
+    beq     loop_bloques_prueba
+    dec     columna
+
+    // borro el bloque original antes de moverme
+    lda     #$00            
+    jsr     fn_dibujar_bloque
+
+    // quiero restar $2200 - $08 para mover el cuadrado uno a la izquierda, usando acarreo y cambiando el puntero $FB/$FC
+    // La instrucción es sbc (Subtract with Carry), pero el acarreo funciona así:
+    // A = A − operando − (1 − C)
+    // Por eso, antes de empezar una resta usamos sec, que pone C en 1: así no se descuenta una unidad adicional (porque queda A = A − operando − (1 − 1)).
+    // | Operación                              | Resultado     | Acarreo           |
+    // | Bajo: `$00 − $08`, sin préstamo previo | `$F8`         | 0: hubo préstamo  |
+    // | Alto: `$22 − $00 − 1`                  | `$21`         | 1                 |
+    sec                     // seteo el acarreo para lograr el '1 - 1'
+    lda     $FB             // cargo el byte bajo que ya tenia en $00FB
+    sbc     #$08            // le resto 8 (lo deja dentro de A, y ademas apaga el acarreo si se paso... funciona al reves que la suma, porque sbc hace A = A − operando − (1 − C))
+    sta     $FB             // guardo el resultado de la suma en $00FB, el byte bajo
+    lda     $FC             // cargo el byte alto que ya tenia en $00FC
+    sbc     #$00            // resto cero, mas (menos) el carry
+    sta     $FC             // guardo el resultado en el byte alto
+    jmp     dibujar_bloque_solido
+
+
+key_right:
+    // chequeo que no se quiera mover despues de la columna 40
+    lda     columna
+    cmp     #39
+    beq     loop_bloques_prueba
+    inc     columna
+
+    // borro el bloque original antes de moverme
+    lda     #$00            
+    jsr     fn_dibujar_bloque
+
+    // quiero sumar $21F8 + $08 para mover el cuadrado uno a la derecha, usando acarreo y cambiando el puntero $FB/$FC
+    // | Operación             | Resultado guardado | Acarreo   |
+    // | Bajo: `$F8 + $08 + 0` | `$00`              | 1         |   
+    // | Alto: `$21 + $00 + 1` | `$22`              | 0         |
     clc                     // limpio acarreo
     lda     $FB             // cargo el byte bajo que ya tenia en $00FB
     adc     #$08            // le sumo 8 (lo deja dentro de A, y ademas prende el acarreo porque se paso)
@@ -230,12 +327,16 @@ loop_bloques_prueba:
     lda     $FC             // cargo el byte alto que ya tenia en $00FC
     adc     #$00            // sumo cero, mas el carry, lo que lo va a llevar a $22
     sta     $FC             // guardo el resultado en el byte alto
+    jmp     dibujar_bloque_solido
 
+
+dibujar_bloque_solido:
     lda     #$FF            // $FF es 1111 1111, asi que queda una todo solido
     jsr     fn_dibujar_bloque
 
     dec     pasos
-    bne     loop_bloques_prueba
+    beq     loop_infinito           // no puedo hacer aca un bne hacia loop_bloques_prueba como quisiera porque esta muy lejos (solo salta 256 direcciones)
+    jmp     loop_bloques_prueba
 
 
     // rts                     // return from subrutine, vuelve a BASIC
@@ -244,7 +345,8 @@ loop_infinito:
 
 
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
     subrutina de dibujo un cuadrado solido, teniendo su direccion apuntada por $00FB $00FC
@@ -266,7 +368,6 @@ loop_linea:
 
 /* 
     subrutina de espera de 255x255 loops
-*/
 fn_loop_espera:
     ldx     #255
 loop_x:
@@ -277,7 +378,35 @@ loop_y:
     dex
     bne     loop_x
     rts
+*/
+
+/*
+    espera por un caracter y lo devuelve en A
+    Q $51
+    A $41
+    O $4F
+    P $50
+*/
+fn_getkey:
+    jsr     $FFE4           // devuelve en A inmediatamente el valor que haya en el buffer de teclado (en PETSCII), o 0 si no hay nada
+    // salgo si es alguna de las teclas conocidas, sino, vuelvo a leer
+    cmp     #$51            
+    beq     salida
+    cmp     #$41
+    beq     salida
+    cmp     #$4F
+    beq     salida
+    cmp     #$50
+    beq     salida
+    jmp     fn_getkey       
+salida:
+    sta     tecla           // guardo la tecla en el byte tecla
+    rts    
+
+
 
 
 pasos:      .byte   0
-
+tecla:      .byte   0
+fila:       .byte   0
+columna:    .byte   0
